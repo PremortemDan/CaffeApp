@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cafe_app/screens/saved_addresses_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -88,8 +89,15 @@ class ProfileScreen extends StatelessWidget {
             _ProfileTile(
               icon: Icons.location_on_outlined,
               label: 'Mis direcciones',
-              subtitle: 'Añade una dirección de entrega',
-              onTap: () {},
+              subtitle: 'Administra tus direcciones',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SavedAddressesScreen(),
+                  ),
+                );
+              },
             ),
             _ProfileTile(
               icon: Icons.payment_outlined,

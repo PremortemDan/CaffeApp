@@ -2,13 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cafe_app/providers/cart_provider.dart';
 import 'package:cafe_app/providers/delivery_provider.dart';
+import 'package:cafe_app/providers/saved_addresses_provider.dart';
 import 'package:cafe_app/screens/home_screen.dart';
 import 'package:cafe_app/screens/cart_screen.dart';
 import 'package:cafe_app/screens/profile_screen.dart';
 import 'package:cafe_app/screens/menu_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  final savedAddressesProvider = SavedAddressesProvider();
+  await savedAddressesProvider.initialize();
+  
   runApp(
     MultiProvider(
       providers: [
@@ -17,6 +23,9 @@ void main() {
         ),
         ChangeNotifierProvider(
           create: (_) => DeliveryProvider(),
+        ),
+        ChangeNotifierProvider.value(
+          value: savedAddressesProvider,
         ),
       ],
       child: const CafeApp(),

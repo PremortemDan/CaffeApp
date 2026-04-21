@@ -30,6 +30,9 @@ class Location {
     return details.isNotEmpty ? details.join(', ') : formattedLocation;
   }
 
+  /// Alias para fullDetails (compatible con SavedAddress)
+  String get fullAddress => fullDetails;
+
   @override
   String toString() =>
       'Location(lat: $latitude, lng: $longitude, address: $address)';

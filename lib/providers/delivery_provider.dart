@@ -142,6 +142,20 @@ class DeliveryProvider extends ChangeNotifier {
     }
   }
 
+  /// Establece la ubicación desde una dirección guardada
+  void setLocationFromSavedAddress(Location location) {
+    _currentLocation = location;
+    _state = DeliveryState.success;
+    _errorMessage = null;
+    notifyListeners();
+
+    // Actualizar la información de envío
+    if (_deliveryInfo != null) {
+      _deliveryInfo!.location = location;
+      notifyListeners();
+    }
+  }
+
   /// Confirma la información del envío
   /// Marca la hora de confirmación y prepara para el checkout
   bool confirmDelivery() {
