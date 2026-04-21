@@ -1,0 +1,119 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# iOS/macOS specific
+**/ios/**/*.pbxuser
+**/ios/**/*.perspective
+**/ios/**/*.perspectivev3
+**/ios/**/*sync/
+**/ios/**/.sconsign.dblite
+**/ios/**/.tags*
+**/ios/**/.vscode/*
+!**/ios/**/.vscode/extensions.json
+**/ios/**/.idea/
+**/ios/**/xcuserdata/
+**/ios/**/Flutter/Flutter.framework
+**/ios/**/Flutter/Flutter.podspec
+**/ios/Pods/
+**/ios/Podfile.lock
+**/ios/.symlinks/
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/macos/Flutter/Flutter-Release.framework
+**/macos/Flutter/Flutter.framework
+
+# Android specific
+/android/.gradle
+/android/captures/
+/android/gradlew
+/android/gradlew.bat
+/android/gradle-wrapper.jar
+/android/.idea
+/android/.classpath
+/android/.project
+/android/.settings/
+/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/android/**/.gradle/
+**/android/**/build/
+**/android/**/.dart_tool/
+
+# Web related
+/web/packages
+/web/.dart_tool/
+lib/generated_plugin_registrant.dart
+
+# Exceptions to above rules.
+!**/ios/**/default.mode1v3
+!**/ios/**/default.mode2v3
+!**/ios/**/default.pbxuser
+!**/ios/**/default.perspectivev3
+!/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
+
+# Local configurations
+**/pubspec.lock
+local.properties
+.env
+.env.local
+
+# Generated files
+/android/app/generated_plugin_registrant.gradle
+lib/generated_plugins.dart
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+.tmp
+
+# NDK
+android-ndk-r**
+
+# Editor backups
+*.bak
+*.backup
+*~
