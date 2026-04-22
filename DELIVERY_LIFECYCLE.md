@@ -222,6 +222,229 @@ Persiste entre sesiones
 
 ---
 
+## 💀 Dispose / Limpieza (Dónde se "Muere" el Proceso)
+
+### **Escenario 1: Usuario abandona DeliverySelectionScreen sin confirmar**
+
+```dart
+Usuario en DeliverySelectionScreen
+    ├─ Toca botón "Atrás" (Navigator.pop)
+    │
+    └─ DeliverySelectionScreen se destruye
+        ↓
+    DeliveryProvider aún contiene:
+      • _state = loading/success/error
+      • _currentLocation = Location (en memoria)
+      • _deliveryInfo (incompleto/no confirmado)
+        
+    ⚠️ No se limpió automáticamente
+```
+
+### **Escenario 2: Usuario confirma envío (flujo normal)**
+
+```dart
+Usuario toca "Continuar al Pago"
+    ↓
+deliveryProvider.confirmDelivery()
+    ├─ _deliveryInfo.confirm() → guardar en CartProvider
+    └─ Navigator.pop()
+    ↓
+DeliverySelectionScreen se destruye
+    ↓
+DeliveryProvider sigue activo (MultiProvider persiste)
+    ├─ _currentLocation sigue en memoria ✓ (para referencia)
+    └─ _deliveryInfo transferido a CartProvider
+```
+
+### **Escenario 3: Usuario confirma pedido (final)**
+
+```dart
+Usuario en CartScreen
+    ├─ Toca "Confirmar pedido"
+    │
+    └─ Modal confirmación
+        ↓
+        Usuario aceptar:
+        ├─ cart.clear()
+        │  ├─ _items = {}
+        │  ├─ _deliveryInfo = null  ← LIMPIA AQUÍ
+        │  └─ notifyListeners()
+        │
+        └─ Modal se cierra
+            ↓
+            CartScreen se reconstruye (carrito vacío)
+            
+    ✅ Datos de envío destruidos
+```
+
+### **Escenario 4: Usuario cierra app o navega a otra sección**
+
+```dart
+Usuario cierra app / abre otra pantalla
+    ↓
+MultiProvider aún contiene Providers:
+    ├─ CartProvider
+    │  ├─ _items (si tiene)
+    │  └─ _deliveryInfo (si existe)
+    │
+    ├─ DeliveryProvider
+    │  ├─ _state
+    │  ├─ _currentLocation (en memoria)
+    │  └─ _deliveryInfo
+    │
+    └─ SavedAddressesProvider
+       ├─ _addresses (cargadas desde SharedPreferences)
+       └─ _prefs (referencia a BD local persistente)
+
+    ⚠️ En memoria se mantiene hasta que app muere
+       
+    SharedPreferences:
+        ✅ Persiste en disco (SEGURO)
+        
+    GPS/Geolocator:
+        ✅ Se detiene automáticamente
+           (no consume batería)
+```
+
+### **Limpieza Explícita: DeliveryProvider.reset()**
+
+```dart
+// Limpia manualmente si es necesario:
+deliveryProvider.reset()
+    ├─ _state = DeliveryState.initial
+    ├─ _currentLocation = null
+    ├─ _deliveryInfo = null
+    ├─ _errorMessage = null
+    └─ notifyListeners()
+    
+// Cuándo se usa:
+  • Cuando usuario selecciona "Recogida" (no necesita ubicación)
+  • Si usuario quiere cancelar y empezar de nuevo
+  • En app lifecycle (aunque no es obligatorio)
+```
+
+### **Limpieza CartProvider.clear()**
+
+```dart
+cart.clear()
+    ├─ _items = {}
+    ├─ _deliveryInfo = null  ← ESENCIAL aquí
+    └─ notifyListeners()
+    
+// Se ejecuta en:
+  • Confirmación final de pedido
+  • Usuario toca "Vaciar carrito" (si aplica)
+  • Reinicio intencional
+  
+// Importante:
+  ✅ Libera memoria de items seleccionados
+  ✅ Limpia referencia a DeliveryInfo
+  ❌ NO elimina SavedAddresses (persisten para próximas órdenes)
+```
+
+### **Limpieza SavedAddressesProvider**
+
+```dart
+SavedAddressesProvider:
+    ├─ _addresses = [ ] ← Cargadas en memoria desde SharedPreferences
+    └─ _prefs = SharedPreferences  ← Referencia persistente
+    
+// Ciclo de vida:
+  1. App inicia → initialize() carga desde disco
+  2. Usuarios modifica → Se actualiza _addresses + SharedPreferences
+  3. App cierra → _addresses descargada de memoria ✓
+                   SharedPreferences persiste en disco ✓
+                   
+// Cuando se llama clearAll() (raro):
+  deliveryProvider.clearAll()
+      └─ BORRA TODAS LAS DIRECCIONES GUARDADAS
+         ⚠️ No se puede deshacer
+         
+// Seguridad:
+  ✅ Datos locales (no enviados a servidor)
+  ✅ Controlados por usuario
+  ✅ Fácil de limpiar en Configuración si necesita
+```
+
+### **Diagrama de Limpieza (Memory Lifecycle)**
+
+```
+APP INICIA
+    │
+    ├─ SavedAddressesProvider.initialize()
+    │  └─ Carga _addresses desde SharedPreferences (disco)
+    │
+    ├─ DeliveryProvider instancia
+    │  └─ _state = initial, _currentLocation = null
+    │
+    └─ CartProvider instancia
+       └─ _items = {}, _deliveryInfo = null
+
+USUARIO ABRE CARRITO → SELECCIONA ENVÍO
+
+    DeliverySelectionScreen abre
+        │
+        ├─ Usuario toca "Obtener Mi Ubicación"
+        │  │
+        │  ├─ Geolocator.getCurrentPosition()
+        │  │  └─ _currentLocation cargado en memoria ✓
+        │  │
+        │  └─ _deliveryInfo creado (sin confirmar)
+
+USUARIO CONFIRMA ENVÍO
+
+    Toca "Continuar al Pago"
+        │
+        ├─ deliveryProvider.confirmDelivery()
+        │  └─ _deliveryInfo confirmado
+        │
+        ├─ cart.setDeliveryInfo()
+        │  └─ CartProvider ahora tiene copia de _deliveryInfo
+        │
+        └─ Navigator.pop() → DeliverySelectionScreen destruida
+           
+    ⚠️ DeliveryProvider sigue en memoria (MultiProvider)
+       _currentLocation aún existe (referencia)
+
+USUARIO CONFIRMA PEDIDO
+
+    Toca "Confirmar pedido" en CartScreen
+        │
+        ├─ Modal: "¿Pedido confirmado?"
+        │  └─ [Aceptar]
+        │
+        └─ cart.clear()
+            ├─ _items = {} ← LIBERA MEMORIA DE PRODUCTOS
+            ├─ _deliveryInfo = null ← LIBERA MEMORIA DE ENVÍO
+            └─ notifyListeners()
+                │
+                └─ CartScreen se reconstruye (vacío)
+
+✅ MEMORIA LIMPIA:
+    - Carrito vacío
+    - Envío reestablecido
+    - Casi listo para nueva orden
+    
+⚠️ AÚN EN MEMORIA:
+    - SavedAddressesProvider._addresses (pero es pequeño)
+    - DeliveryProvider (no tiene datos de envío activo)
+
+APP CIERRA O USUARIO SALE
+
+    Providers se destruyen
+        │
+        ├─ CartProvider.dispose() (si lo implementara)
+        ├─ DeliveryProvider.dispose() (si lo implementara)
+        └─ SavedAddressesProvider.dispose()
+            └─ _prefs referencia se libera
+                
+    ✅ SharedPreferences persiste en disco
+    ✅ Memoria de app liberada
+    ✅ GPS apagado (no consume batería)
+```
+
+---
+
 ## ✋ Confirmación del Envío
 
 ```dart
